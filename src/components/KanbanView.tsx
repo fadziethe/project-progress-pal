@@ -32,13 +32,13 @@ export function KanbanView({ tasks, onMoveTask, onEditTask }: KanbanViewProps) {
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto pr-1">
               {colTasks.map((task, i) => (
-                <motion.div
+              <motion.div
                   key={task.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   draggable
-                  onDragStart={e => e.dataTransfer.setData("taskId", task.id)}
+                  onDragStart={e => (e as unknown as React.DragEvent).dataTransfer?.setData("taskId", task.id)}
                   onClick={() => onEditTask(task)}
                   className="glass rounded-xl p-4 cursor-pointer hover:border-primary/30 transition-all group"
                 >
