@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Task, TaskStatus, TaskPriority } from "@/types/task";
+import { useState, useEffect } from "react";
+import { Task, TaskStatus, TaskPriority, SDLC_STAGES } from "@/types/task";
+import { Project } from "@/types/task";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -7,6 +8,7 @@ interface TaskDialogProps {
   open: boolean;
   onClose: () => void;
   task?: Task | null;
+  project: Project | null;
   onSave: (data: Omit<Task, "id" | "createdAt">) => void;
   onUpdate: (id: string, data: Partial<Task>) => void;
   onDelete: (id: string) => void;
@@ -15,23 +17,45 @@ interface TaskDialogProps {
 const statuses: TaskStatus[] = ["backlog", "todo", "in_progress", "review", "done"];
 const priorities: TaskPriority[] = ["low", "medium", "high", "critical"];
 
-export function TaskDialog({ open, onClose, task, onSave, onUpdate, onDelete }: TaskDialogProps) {
+export function TaskDialog({ open, onClose, task, project, onSave, onUpdate, onDelete }: TaskDialogProps) {
+  const projectStages = project ? SDLC_STAGES.filter(s => project.stages.includes(s.id)) : [];
+  
   const [form, setForm] = useState({
-    title: task?.title || "",
-    description: task?.description || "",
-    status: task?.status || ("todo" as TaskStatus),
-    priority: task?.priority || ("medium" as TaskPriority),
-    assignee: task?.assignee || "",
-    startDate: task?.startDate || new Date().toISOString().split("T")[0],
-    dueDate: task?.dueDate || "",
-    progress: task?.progress || 0,
-    tags: task?.tags?.join(", ") || "",
+    title: "",
+    description: "",
+    status: "todo" as TaskStatus,
+    priority: "medium" as TaskPriority,
+    assignee: "",
+    startDate: new Date().toISOString().split("T")[0],
+    dueDate: "",
+    progress: 0,
+    tags: "",
+    stage: projectStages[0]?.id || "",
   });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: task?.title || "",
+        description: task?.description || "",
+        status: task?.status || "todo",
+        priority: task?.priority || "medium",
+        assignee: task?.assignee || "",
+        startDate: task?.startDate || new Date().toISOString().split("T")[0],
+        dueDate: task?.dueDate || "",
+        progress: task?.progress || 0,
+        tags: task?.tags?.join(", ") || "",
+        stage: task?.stage || projectStages[0]?.id || "",
+      });
+    }
+  }, [open, task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!project) return;
     const data = {
       ...form,
+      projectId: project.id,
       tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
     };
     if (task) {
@@ -80,16 +104,30 @@ export function TaskDialog({ open, onClose, task, onSave, onUpdate, onDelete }: 
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className={labelClass}>SDLC Stage</label>
+                  <select className={inputClass} value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
+                    {projectStages.map(s => (
+                      <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className={labelClass}>Status</label>
                   <select className={inputClass} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as TaskStatus }))}>
                     {statuses.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Priority</label>
                   <select className={inputClass} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as TaskPriority }))}>
                     {priorities.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Assignee</label>
+                  <input className={inputClass} value={form.assignee} onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))} placeholder="Name" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -102,15 +140,9 @@ export function TaskDialog({ open, onClose, task, onSave, onUpdate, onDelete }: 
                   <input type="date" className={inputClass} value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Assignee</label>
-                  <input className={inputClass} value={form.assignee} onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))} placeholder="Name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Progress ({form.progress}%)</label>
-                  <input type="range" min="0" max="100" className="w-full accent-primary" value={form.progress} onChange={e => setForm(f => ({ ...f, progress: Number(e.target.value) }))} />
-                </div>
+              <div>
+                <label className={labelClass}>Progress ({form.progress}%)</label>
+                <input type="range" min="0" max="100" className="w-full accent-primary" value={form.progress} onChange={e => setForm(f => ({ ...f, progress: Number(e.target.value) }))} />
               </div>
               <div>
                 <label className={labelClass}>Tags (comma separated)</label>
