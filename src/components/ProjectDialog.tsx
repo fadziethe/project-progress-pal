@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { SDLC_STAGES, PROJECT_COLORS } from "@/types/task";
-import { X, Check } from "lucide-react";
+import { SDLC_STAGES, PROJECT_COLORS, ProjectType } from "@/types/task";
+import { X, Check, Code2, ClipboardList } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ProjectDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; description: string; stages: string[]; color: string }) => void;
+  onSave: (data: { name: string; description: string; type: ProjectType; stages: string[]; color: string }) => void;
 }
 
 export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [projectType, setProjectType] = useState<ProjectType | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(PROJECT_COLORS[0]);
@@ -26,11 +27,9 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
   const selectAll = () => setSelectedStages(SDLC_STAGES.map(s => s.id));
   const selectNone = () => setSelectedStages([]);
 
-  const handleSubmit = () => {
-    if (!name.trim() || selectedStages.length === 0) return;
-    onSave({ name, description, stages: selectedStages, color });
-    // Reset
+  const handleClose = () => {
     setStep(1);
+    setProjectType(null);
     setName("");
     setDescription("");
     setSelectedStages([]);
@@ -38,8 +37,36 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
     onClose();
   };
 
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    if (projectType === "software" && selectedStages.length === 0) return;
+    onSave({ name, description, type: projectType!, stages: selectedStages, color });
+    handleClose();
+  };
+
+  const handleTypeSelect = (type: ProjectType) => {
+    setProjectType(type);
+    setStep(2);
+  };
+
+  const handleStep2Next = () => {
+    if (!name.trim()) return;
+    if (projectType === "software") {
+      setStep(3);
+    } else {
+      handleSubmit();
+    }
+  };
+
   const inputClass = "w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50";
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1.5";
+
+  const stepTitle = step === 1 ? "What type of project?" : step === 2 ? "Project Details" : "Select SDLC Stages";
+  const stepDesc = step === 1
+    ? "Choose the kind of project you want to create"
+    : step === 2
+      ? "Give your project a name and description"
+      : "Choose the stages your project needs. These define your development lifecycle.";
 
   return (
     <AnimatePresence>
@@ -49,7 +76,7 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-          onClick={onClose}
+          onClick={handleClose}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -60,21 +87,53 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-heading font-bold text-foreground">
-                  {step === 1 ? "New Project" : "Select SDLC Stages"}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {step === 1
-                    ? "Give your project a name and description"
-                    : "Choose the stages your project needs. These define your development lifecycle."}
-                </p>
+                <h3 className="font-heading font-bold text-foreground">{stepTitle}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{stepDesc}</p>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
-            {step === 1 ? (
+            {/* Step 1: Project Type */}
+            {step === 1 && (
+              <div className="grid grid-cols-2 gap-4">
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  onClick={() => handleTypeSelect("software")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Code2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-foreground block">Software Project</span>
+                    <p className="text-xs text-muted-foreground mt-1">Full SDLC tracking with stages like Requirements, Design, Testing & more</p>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  onClick={() => handleTypeSelect("general")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-accent/30 flex items-center justify-center group-hover:bg-accent/50 transition-colors">
+                    <ClipboardList className="w-6 h-6 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-foreground block">General Tasks</span>
+                    <p className="text-xs text-muted-foreground mt-1">Simple task management without SDLC stages — just add and track tasks</p>
+                  </div>
+                </motion.button>
+              </div>
+            )}
+
+            {/* Step 2: Name & Details */}
+            {step === 2 && (
               <div className="space-y-4">
                 <div>
                   <label className={labelClass}>Project Name</label>
@@ -101,15 +160,26 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
                     ))}
                   </div>
                 </div>
-                <button
-                  onClick={() => name.trim() && setStep(2)}
-                  disabled={!name.trim()}
-                  className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity glow-primary disabled:opacity-50"
-                >
-                  Next — Choose Stages →
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setStep(1); setProjectType(null); }}
+                    className="px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={handleStep2Next}
+                    disabled={!name.trim()}
+                    className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity glow-primary disabled:opacity-50"
+                  >
+                    {projectType === "software" ? "Next — Choose Stages →" : "Create Project"}
+                  </button>
+                </div>
               </div>
-            ) : (
+            )}
+
+            {/* Step 3: SDLC Stages (software only) */}
+            {step === 3 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <button onClick={selectAll} className="text-xs text-primary hover:underline">Select All</button>
@@ -161,7 +231,7 @@ export function ProjectDialog({ open, onClose, onSave }: ProjectDialogProps) {
 
                 <div className="flex gap-3 pt-2">
                   <button
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"
                   >
                     ← Back
