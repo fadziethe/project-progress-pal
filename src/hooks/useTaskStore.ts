@@ -96,7 +96,11 @@ export function useTaskStore() {
   }, []);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
-    const dbUpdates: Record<string, unknown> = {};
+    const dbUpdates: {
+      title?: string; description?: string; status?: string; priority?: string;
+      assignee?: string | null; start_date?: string; due_date?: string;
+      progress?: number; tags?: string[]; stage?: string;
+    } = {};
     if (updates.title !== undefined) dbUpdates.title = updates.title;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
@@ -122,10 +126,10 @@ export function useTaskStore() {
 
   const moveTask = useCallback(async (id: string, status: TaskStatus) => {
     const progress = status === "done" ? 100 : status === "review" ? 85 : undefined;
-    const updates: Record<string, unknown> = { status };
-    if (progress !== undefined) updates.progress = progress;
+    const dbUp: { status: string; progress?: number } = { status };
+    if (progress !== undefined) dbUp.progress = progress;
 
-    const { error } = await supabase.from("tasks").update(updates).eq("id", id);
+    const { error } = await supabase.from("tasks").update(dbUp).eq("id", id);
     if (error) { toast.error("Failed to move task"); return; }
     setAllTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
