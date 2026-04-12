@@ -84,8 +84,8 @@ export function SidebarNav({
         </div>
       </div>
 
-      {/* Stage Progress (for active project) */}
-      {activeProject && (
+      {/* Stage Progress (for software projects only) */}
+      {activeProject && activeProject.type === "software" && (
         <div className="px-4 py-2 border-t border-sidebar-border">
           <div className="flex items-center justify-between mb-2 px-1">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Stages</p>

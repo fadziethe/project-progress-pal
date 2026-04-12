@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Task, TaskStatus, TaskPriority, SDLC_STAGES } from "@/types/task";
 import { Project } from "@/types/task";
 import { X } from "lucide-react";
@@ -18,7 +19,8 @@ const statuses: TaskStatus[] = ["backlog", "todo", "in_progress", "review", "don
 const priorities: TaskPriority[] = ["low", "medium", "high", "critical"];
 
 export function TaskDialog({ open, onClose, task, project, onSave, onUpdate, onDelete }: TaskDialogProps) {
-  const projectStages = project ? SDLC_STAGES.filter(s => project.stages.includes(s.id)) : [];
+  const isSoftware = project?.type === "software";
+  const projectStages = isSoftware ? SDLC_STAGES.filter(s => project.stages.includes(s.id)) : [];
   
   const [form, setForm] = useState({
     title: "",
@@ -102,15 +104,17 @@ export function TaskDialog({ open, onClose, task, project, onSave, onUpdate, onD
                 <label className={labelClass}>Description</label>
                 <textarea className={`${inputClass} min-h-[80px] resize-none`} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the task..." />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>SDLC Stage</label>
-                  <select className={inputClass} value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
-                    {projectStages.map(s => (
-                      <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className={cn("grid gap-4", isSoftware ? "grid-cols-2" : "grid-cols-1")}>
+                {isSoftware && (
+                  <div>
+                    <label className={labelClass}>SDLC Stage</label>
+                    <select className={inputClass} value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
+                      {projectStages.map(s => (
+                        <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className={labelClass}>Status</label>
                   <select className={inputClass} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as TaskStatus }))}>
