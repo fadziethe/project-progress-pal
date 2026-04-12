@@ -26,11 +26,14 @@ export interface SDLCStage {
   order: number;
 }
 
+export type ProjectType = "software" | "general";
+
 export interface Project {
   id: string;
   name: string;
   description: string;
-  stages: string[]; // selected stage IDs
+  type: ProjectType;
+  stages: string[]; // selected stage IDs (software projects only)
   createdAt: string;
   color: string;
 }
